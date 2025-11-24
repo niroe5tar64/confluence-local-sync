@@ -161,6 +161,87 @@ confluence-local-sync/
 - バッチ処理: 初期段階から実装
 - 検索・フィルタリング: 初期段階から実装
 
+### 5. CLI の配布方法
+
+**CLI ツールは npm パッケージとして配布する**（強く推奨）
+
+**メリット**:
+- インストールが簡単（`npm install -g @your-org/confluence-sync-cli`）
+- バージョン管理が容易
+- チーム全体での利用が簡単
+- CI/CD での利用も可能
+
+**package.json 設定例**:
+```json
+{
+  "name": "@your-org/confluence-sync-cli",
+  "version": "0.1.0",
+  "bin": {
+    "confluence-sync": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "prepublishOnly": "bun run build"
+  }
+}
+```
+
+**エントリーポイント** (`src/index.ts`):
+```typescript
+#!/usr/bin/env node
+import { Command } from 'commander';
+// コマンド実装...
+```
+
+**公開方法**:
+- GitHub Packages またはプライベート npm レジストリを使用
+- `npm publish --registry=https://npm.pkg.github.com`
+
+### 6. GAS のデプロイ方法
+
+**clasp を使用して GAS 環境にデプロイする**
+
+このプロジェクトでは、既存の `confluence-gas-toolkit` と同様に clasp を導入します。
+
+**セットアップ手順**:
+
+1. **clasp のインストール**:
+   ```bash
+   npm install -g @google/clasp
+   clasp login
+   ```
+
+2. **GAS プロジェクトの作成**:
+   ```bash
+   cd packages/gas-backend
+   clasp create --type standalone --title "Confluence Local Sync Backend"
+   ```
+
+3. **`.clasp.json` の設定**:
+   ```json
+   {
+     "scriptId": "YOUR_SCRIPT_ID",
+     "rootDir": "./dist"
+   }
+   ```
+
+4. **デプロイコマンド**:
+   ```bash
+   # ビルド
+   bun run build
+
+   # GAS にプッシュ
+   clasp push
+
+   # デプロイ
+   clasp deploy
+   ```
+
+**参考**:
+- `confluence-gas-toolkit` の `.clasp.json` と `package.json` を参照
+- GAS のスクリプトプロパティで環境変数（システム管理者 PAT など）を設定
+
 ## 既存リポジトリへの参照
 
 ### confluence-gas-toolkit
@@ -193,9 +274,15 @@ bun init
 
 このプロジェクトはモノレポ構成ですが、ワークスペース管理ツール（Turborepo, pnpm workspace など）は未導入です。必要に応じて、ルートの `package.json` でワークスペース設定を追加してください。
 
-### GAS のデプロイ
-
-GAS Backend は clasp を使ってデプロイします。`.clasp.json` の設定は `confluence-gas-toolkit` を参考にしてください。
+**Bun Workspaces の設定例** (ルートの `package.json`):
+```json
+{
+  "name": "confluence-local-sync",
+  "workspaces": [
+    "packages/*"
+  ]
+}
+```
 
 ## 関連 Issues / PRs
 
@@ -204,3 +291,4 @@ GAS Backend は clasp を使ってデプロイします。`.clasp.json` の設�
 ## 更新履歴
 
 - 2025-11-24: 初版作成（プロジェクトセットアップ完了時点）
+- 2025-11-24: CLI の npm パッケージ化方針と clasp デプロイ方法を追記
